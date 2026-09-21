@@ -8,11 +8,38 @@ interface VocabularyPageProps {
   onScored: (wordId: string, score: number) => void
 }
 
+function normalize(text: string) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+}
+
+const searchableWords = vocabulary.flatMap((cat) =>
+  cat.words.map((word) => ({ ...word, categoryId: cat.id, categoryEmoji: cat.emoji, categoryTitle: cat.title })),
+)
+
 export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [wordIndex, setWordIndex] = useState(0)
+  const [query, setQuery] = useState('')
 
   const category = useMemo(() => vocabulary.find((c) => c.id === categoryId) ?? null, [categoryId])
+
+  const searchResults = useMemo(() => {
+    const q = normalize(query.trim())
+    if (!q) return []
+    return searchableWords.filter(
+      (w) => normalize(w.en).includes(q) || normalize(w.pt).includes(q) || normalize(w.exampleEn).includes(q) || normalize(w.examplePt).includes(q),
+    )
+  }, [query])
+
+  function openWord(catId: string, id: string) {
+    const cat = vocabulary.find((c) => c.id === catId)
+    const idx = cat?.words.findIndex((w) => w.id === id) ?? 0
+    setCategoryId(catId)
+    setWordIndex(Math.max(0, idx))
+  }
 
   if (!category) {
     return (
@@ -21,28 +48,64 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
         <p className="mt-1 text-slate-500 dark:text-slate-400">
           Escolha uma categoria, ouça a pronúncia correta e pratique falando no microfone.
         </p>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {vocabulary.map((cat) => {
-            const learnedCount = cat.words.filter((w) => progress.learnedWordIds.includes(w.id)).length
-            return (
+
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔍 Buscar qualquer palavra (em português ou inglês)..."
+          className="mt-4 w-full rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
+        />
+
+        {query.trim() ? (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {searchResults.length} resultado{searchResults.length === 1 ? '' : 's'} para "{query.trim()}"
+            </p>
+            {searchResults.length === 0 && (
+              <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                Nenhuma palavra encontrada. Tente outro termo, ou pergunte diretamente no Chat IA.
+              </p>
+            )}
+            {searchResults.map((w) => (
               <button
-                key={cat.id}
-                onClick={() => {
-                  setCategoryId(cat.id)
-                  setWordIndex(0)
-                }}
-                className="flex flex-col items-start gap-1 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                key={w.id}
+                onClick={() => openWord(w.categoryId, w.id)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
               >
-                <span className="text-3xl">{cat.emoji}</span>
-                <span className="font-semibold">{cat.title}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">{cat.description}</span>
-                <span className="mt-2 text-xs font-medium text-brand-600 dark:text-brand-400">
-                  {learnedCount}/{cat.words.length} aprendidas
+                <span>
+                  <span className="font-semibold">{w.en}</span>
+                  <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">{w.pt}</span>
+                </span>
+                <span className="text-xs text-slate-400">
+                  {w.categoryEmoji} {w.categoryTitle}
                 </span>
               </button>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {vocabulary.map((cat) => {
+              const learnedCount = cat.words.filter((w) => progress.learnedWordIds.includes(w.id)).length
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setCategoryId(cat.id)
+                    setWordIndex(0)
+                  }}
+                  className="flex flex-col items-start gap-1 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <span className="text-3xl">{cat.emoji}</span>
+                  <span className="font-semibold">{cat.title}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{cat.description}</span>
+                  <span className="mt-2 text-xs font-medium text-brand-600 dark:text-brand-400">
+                    {learnedCount}/{cat.words.length} aprendidas
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }
