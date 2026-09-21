@@ -1,16 +1,5 @@
 import type { ChatMessage, Level, Settings } from '../types'
 
-const MODEL = 'claude-haiku-4-5-20251001'
-
-function systemPrompt(level: Level) {
-  return `You are "Amy", a warm, patient English conversation tutor for a Brazilian Portuguese speaker learning English at level ${level}.
-Rules:
-- Always reply in English, using simple vocabulary suited to level ${level}.
-- Keep replies short: 1-3 sentences, plus one short follow-up question to keep the conversation going.
-- If the student's last message has a grammar or word-choice mistake, gently point it out with the corrected sentence in quotes before continuing the conversation. If there is no mistake, do not invent one.
-- Be encouraging and friendly, like a real spoken conversation practice partner.`
-}
-
 export interface AIReplyResult {
   text: string
   usedRealAI: boolean
@@ -18,45 +7,25 @@ export interface AIReplyResult {
 }
 
 export async function getAIReply(history: ChatMessage[], settings: Settings): Promise<AIReplyResult> {
-  const apiKey = settings.apiKey.trim()
-  if (apiKey) {
-    try {
-      const text = await callAnthropic(history, settings.level, apiKey)
-      return { text, usedRealAI: true }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao chamar a IA.'
-      return { text: fallbackReply(history, settings.level), usedRealAI: false, errorMessage }
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        level: settings.level,
+        messages: history.map((m) => ({ role: m.role, text: m.text })),
+      }),
+    })
+
+    const data = (await response.json().catch(() => null)) as { text?: string; error?: string } | null
+    if (!response.ok || !data?.text) {
+      throw new Error(data?.error ?? `Servidor respondeu ${response.status}`)
     }
+    return { text: data.text, usedRealAI: true }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao chamar a IA.'
+    return { text: fallbackReply(history), usedRealAI: false, errorMessage }
   }
-  return { text: fallbackReply(history, settings.level), usedRealAI: false }
-}
-
-async function callAnthropic(history: ChatMessage[], level: Level, apiKey: string): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 220,
-      system: systemPrompt(level),
-      messages: history.map((m) => ({ role: m.role, content: m.text })),
-    }),
-  })
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Anthropic API respondeu ${response.status}: ${body.slice(0, 200)}`)
-  }
-
-  const data = (await response.json()) as { content?: { type: string; text?: string }[] }
-  const text = data.content?.find((c) => c.type === 'text')?.text
-  if (!text) throw new Error('Resposta da IA vazia.')
-  return text.trim()
 }
 
 const COMMON_FIXES: { pattern: RegExp; fix: string }[] = [
@@ -80,7 +49,7 @@ function pickFollowUp(seed: number) {
   return FOLLOW_UPS[seed % FOLLOW_UPS.length]
 }
 
-export function fallbackReply(history: ChatMessage[], _level: Level): string {
+export function fallbackReply(history: ChatMessage[], _level?: Level): string {
   const lastUser = [...history].reverse().find((m) => m.role === 'user')
   const text = (lastUser?.text ?? '').trim()
   const lower = text.toLowerCase()

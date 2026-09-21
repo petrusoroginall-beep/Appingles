@@ -33,23 +33,6 @@ export function SettingsPage({ settings, onChange }: SettingsPageProps) {
       </section>
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="font-semibold">Chat com IA (opcional)</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Sem uma chave de API, o chat funciona em modo de prática offline com respostas automáticas. Para conversar
-          com uma IA real (Claude), cole sua própria chave da API da Anthropic abaixo. A chave fica salva apenas no
-          seu navegador (localStorage) e é usada apenas para chamar a API diretamente do seu dispositivo — nunca é
-          enviada a nenhum outro servidor.
-        </p>
-        <input
-          type="password"
-          value={settings.apiKey}
-          onChange={(e) => onChange({ ...settings, apiKey: e.target.value })}
-          placeholder="sk-ant-..."
-          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800"
-        />
-      </section>
-
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="font-semibold">Voz</h2>
         <label className="mt-3 flex items-center justify-between text-sm">
           <span>Ler respostas da IA automaticamente</span>
