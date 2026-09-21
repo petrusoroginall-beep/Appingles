@@ -14,7 +14,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 export function TabBar({ active, onChange }: TabBarProps) {
   return (
-    <nav className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
+    <nav className="safe-bottom sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
       <div className="mx-auto flex max-w-3xl justify-between px-4 py-2">
         {TABS.map((tab) => (
           <button
