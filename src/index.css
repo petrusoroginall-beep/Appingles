@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(148 163 184 / 0.5);
+  border-radius: 999px;
+}
