@@ -27,7 +27,7 @@ export default function App() {
 
       <main className="flex-1 pb-4">
         {tab === 'vocabulario' && <VocabularyPage progress={progress} onScored={recordScore} />}
-        {tab === 'chat' && <ChatPage settings={settings} onTurn={incrementChatTurns} />}
+        {tab === 'chat' && <ChatPage settings={settings} onSettingsChange={setSettings} onTurn={incrementChatTurns} />}
         {tab === 'progresso' && <ProgressPage progress={progress} />}
         {tab === 'config' && <SettingsPage settings={settings} onChange={setSettings} />}
       </main>
