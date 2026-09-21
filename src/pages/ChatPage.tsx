@@ -8,6 +8,7 @@ import { MicButton } from '../components/MicButton'
 
 interface ChatPageProps {
   settings: Settings
+  onSettingsChange: (next: Settings) => void
   onTurn: () => void
 }
 
@@ -18,7 +19,7 @@ const WELCOME: ChatMessage = {
   createdAt: Date.now(),
 }
 
-export function ChatPage({ settings, onTurn }: ChatPageProps) {
+export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME])
   const [draft, setDraft] = useState('')
   const [thinking, setThinking] = useState(false)
@@ -26,9 +27,10 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
   const [aiOnline, setAiOnline] = useState<boolean | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const { speak, stop: stopSpeaking, speaking, supported: ttsSupported } = useSpeechSynthesis()
+  const voiceLang = settings.chatVoiceLang
 
   const { status, start, stop, supported, error: micError } = useSpeechRecognition({
-    lang: 'en-US',
+    lang: voiceLang,
     onResult: (text, isFinal) => {
       if (isFinal && text) {
         setDraft(text)
@@ -117,13 +119,39 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      {supported && (
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <span className="text-xs text-slate-500 dark:text-slate-400">Microfone entende:</span>
+          <div className="flex overflow-hidden rounded-full border border-slate-300 dark:border-slate-700">
+            <button
+              onClick={() => onSettingsChange({ ...settings, chatVoiceLang: 'en-US' })}
+              disabled={listening}
+              className={`px-3 py-1 text-xs font-medium transition ${
+                voiceLang === 'en-US' ? 'bg-brand-600 text-white' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              🇺🇸 Inglês
+            </button>
+            <button
+              onClick={() => onSettingsChange({ ...settings, chatVoiceLang: 'pt-BR' })}
+              disabled={listening}
+              className={`px-3 py-1 text-xs font-medium transition ${
+                voiceLang === 'pt-BR' ? 'bg-brand-600 text-white' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              🇧🇷 Português
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-3">
         <MicButton listening={listening} onClick={() => (listening ? stop() : start())} disabled={!supported || thinking} size="sm" />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={supported ? 'Fale ou digite em inglês...' : 'Digite em inglês...'}
+          placeholder={supported ? 'Fale ou digite em inglês ou português...' : 'Digite em inglês ou português...'}
           className="flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
         />
         <button
@@ -134,7 +162,11 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
           Enviar
         </button>
       </div>
-      {listening && <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">Ouvindo... fale agora.</p>}
+      {listening && (
+        <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale agora.
+        </p>
+      )}
       {micErrorMessage && (
         <p className="mt-2 text-center text-xs text-amber-600 dark:text-amber-400">{micErrorMessage}</p>
       )}

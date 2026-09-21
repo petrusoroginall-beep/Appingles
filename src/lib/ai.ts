@@ -6,26 +6,42 @@ export interface AIReplyResult {
   errorMessage?: string
 }
 
-export async function getAIReply(history: ChatMessage[], settings: Settings): Promise<AIReplyResult> {
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        level: settings.level,
-        messages: history.map((m) => ({ role: m.role, text: m.text })),
-      }),
-    })
+async function callChatEndpoint(history: ChatMessage[], settings: Settings): Promise<string> {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      level: settings.level,
+      messages: history.map((m) => ({ role: m.role, text: m.text })),
+    }),
+  })
 
-    const data = (await response.json().catch(() => null)) as { text?: string; error?: string } | null
-    if (!response.ok || !data?.text) {
-      throw new Error(data?.error ?? `Servidor respondeu ${response.status}`)
-    }
-    return { text: data.text, usedRealAI: true }
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao chamar a IA.'
-    return { text: fallbackReply(history), usedRealAI: false, errorMessage }
+  const data = (await response.json().catch(() => null)) as { text?: string; error?: string } | null
+  if (!response.ok || !data?.text) {
+    throw new Error(data?.error ?? `Servidor respondeu ${response.status}`)
   }
+  return data.text
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function getAIReply(history: ChatMessage[], settings: Settings): Promise<AIReplyResult> {
+  let lastError: unknown
+  // A "Load failed" / network-level error can be a one-off blip on mobile connections,
+  // so retry once before giving up and falling back to the offline tutor.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const text = await callChatEndpoint(history, settings)
+      return { text, usedRealAI: true }
+    } catch (err) {
+      lastError = err
+      if (attempt === 0) await sleep(500)
+    }
+  }
+  const errorMessage = lastError instanceof Error ? lastError.message : 'Erro desconhecido ao chamar a IA.'
+  return { text: fallbackReply(history), usedRealAI: false, errorMessage }
 }
 
 const COMMON_FIXES: { pattern: RegExp; fix: string }[] = [

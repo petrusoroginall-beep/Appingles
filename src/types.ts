@@ -36,8 +36,11 @@ export interface ProgressState {
   lastActiveDate: string | null
 }
 
+export type ChatVoiceLang = 'en-US' | 'pt-BR'
+
 export interface Settings {
   level: Level
   voiceRate: number
   autoSpeak: boolean
+  chatVoiceLang: ChatVoiceLang
 }
