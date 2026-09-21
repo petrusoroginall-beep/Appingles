@@ -1,4 +1,4 @@
-const MODEL = 'gemini-2.0-flash'
+const MODELS = ['gemini-3.6-flash', 'gemini-flash-latest']
 
 function systemPrompt(level) {
   return `You are "Amy", a warm, patient English conversation tutor for a Brazilian Portuguese speaker learning English at level ${level}.
@@ -7,6 +7,32 @@ Rules:
 - Keep replies short: 1-3 sentences, plus one short follow-up question to keep the conversation going.
 - If the student's last message has a grammar or word-choice mistake, gently point it out with the corrected sentence in quotes before continuing the conversation. If there is no mistake, do not invent one.
 - Be encouraging and friendly, like a real spoken conversation practice partner.`
+}
+
+async function callGemini(model, apiKey, contents, level) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        systemInstruction: { parts: [{ text: systemPrompt(level || 'A1') }] },
+        generationConfig: { maxOutputTokens: 220 },
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    const notFound = response.status === 404
+    return { ok: false, notFound, error: `Gemini API (${model}) respondeu ${response.status}: ${body.slice(0, 300)}` }
+  }
+
+  const data = await response.json()
+  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
+  if (!text) return { ok: false, notFound: false, error: 'Resposta vazia da IA.' }
+  return { ok: true, text }
 }
 
 export default async function handler(req, res) {
@@ -32,35 +58,19 @@ export default async function handler(req, res) {
     parts: [{ text: String(m.text ?? '') }],
   }))
 
+  let lastError = 'Erro desconhecido ao chamar a IA.'
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: { parts: [{ text: systemPrompt(level || 'A1') }] },
-          generationConfig: { maxOutputTokens: 220 },
-        }),
-      },
-    )
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => '')
-      res.status(502).json({ error: `Gemini API respondeu ${response.status}: ${body.slice(0, 300)}` })
-      return
+    for (const model of MODELS) {
+      const result = await callGemini(model, apiKey, contents, level)
+      if (result.ok) {
+        res.status(200).json({ text: result.text })
+        return
+      }
+      lastError = result.error
+      if (!result.notFound) break
     }
-
-    const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
-    if (!text) {
-      res.status(502).json({ error: 'Resposta vazia da IA.' })
-      return
-    }
-
-    res.status(200).json({ text })
+    res.status(502).json({ error: lastError })
   } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : 'Erro desconhecido ao chamar a IA.' })
+    res.status(500).json({ error: err instanceof Error ? err.message : lastError })
   }
 }
