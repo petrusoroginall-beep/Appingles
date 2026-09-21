@@ -66,6 +66,9 @@ export function useSpeechRecognition({ lang = 'en-US', onResult }: UseSpeechReco
     if (!recognitionRef.current) return
     setError(null)
     setTranscript('')
+    // Flip the UI to "listening" immediately on tap instead of waiting for the
+    // browser's onstart event, which can lag noticeably behind the actual tap.
+    setStatus('listening')
     try {
       recognitionRef.current.start()
     } catch {
