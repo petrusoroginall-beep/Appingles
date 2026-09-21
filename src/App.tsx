@@ -1,15 +1,15 @@
-import { useState } from 'react'
 import type { Tab } from './types'
 import { TabBar } from './components/TabBar'
 import { VocabularyPage } from './pages/VocabularyPage'
 import { ChatPage } from './pages/ChatPage'
 import { ProgressPage } from './pages/ProgressPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { useLocalStorage } from './hooks/useLocalStorage'
 import { useProgress } from './hooks/useProgress'
 import { useSettings } from './hooks/useSettings'
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('chat')
+  const [tab, setTab] = useLocalStorage<Tab>('appingles.activeTab', 'chat')
   const { progress, recordScore, incrementChatTurns } = useProgress()
   const { settings, setSettings } = useSettings()
 
