@@ -3,6 +3,7 @@ import type { ChatMessage, Settings } from '../types'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { getAIReply } from '../lib/ai'
+import { friendlySpeechError } from '../lib/speechErrors'
 import { MicButton } from '../components/MicButton'
 
 interface ChatPageProps {
@@ -26,7 +27,7 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const { speak, stop: stopSpeaking, speaking, supported: ttsSupported } = useSpeechSynthesis()
 
-  const { status, start, stop, supported } = useSpeechRecognition({
+  const { status, start, stop, supported, error: micError } = useSpeechRecognition({
     lang: 'en-US',
     onResult: (text, isFinal) => {
       if (isFinal && text) {
@@ -36,6 +37,7 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
     },
   })
   const listening = status === 'listening'
+  const micErrorMessage = friendlySpeechError(micError)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -132,6 +134,10 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
           Enviar
         </button>
       </div>
+      {listening && <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">Ouvindo... fale agora.</p>}
+      {micErrorMessage && (
+        <p className="mt-2 text-center text-xs text-amber-600 dark:text-amber-400">{micErrorMessage}</p>
+      )}
       {!supported && (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
           Este navegador não suporta reconhecimento de voz. Use o Chrome/Edge para conversar por voz, ou digite sua mensagem.

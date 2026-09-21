@@ -3,6 +3,7 @@ import type { VocabWord } from '../types'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { feedbackForScore, scorePronunciation } from '../lib/pronunciation'
+import { friendlySpeechError } from '../lib/speechErrors'
 import { MicButton } from './MicButton'
 
 interface PronunciationCardProps {
@@ -88,7 +89,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
             Reconhecimento de voz não é suportado neste navegador. Use o Chrome para praticar a pronúncia por voz.
           </p>
         )}
-        {error && <p className="text-xs text-red-500">Erro no microfone: {error}</p>}
+        {friendlySpeechError(error) && <p className="text-xs text-red-500">{friendlySpeechError(error)}</p>}
         {listening && <p className="text-xs text-slate-500 dark:text-slate-400">Ouvindo... diga: "{word.en}"</p>}
         {!listening && transcript && !result && <p className="text-xs text-slate-400">Você disse: {transcript}</p>}
 
