@@ -25,7 +25,9 @@ async function callGemini(model, apiKey, contents, level) {
       body: JSON.stringify({
         contents,
         systemInstruction: { parts: [{ text: systemPrompt(level || 'A1') }] },
-        generationConfig: { maxOutputTokens: 1024 },
+        // Replies are meant to be 1-3 short sentences, so a lower cap keeps generation time
+        // down without risking truncation of a normal reply.
+        generationConfig: { maxOutputTokens: 300 },
       }),
     },
   )
@@ -88,7 +90,7 @@ export default async function handler(req, res) {
         }
         lastError = result.error
         if (!result.retryable) break
-        if (attempt === 0) await sleep(600)
+        if (attempt === 0) await sleep(350)
       }
     }
     res.status(502).json({ error: lastError })

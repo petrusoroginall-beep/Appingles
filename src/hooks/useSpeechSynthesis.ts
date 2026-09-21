@@ -5,6 +5,7 @@ export function useSpeechSynthesis() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const supported = typeof window !== 'undefined' && 'speechSynthesis' in window
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const unlockedRef = useRef(false)
 
   useEffect(() => {
     if (!supported) return
@@ -44,7 +45,8 @@ export function useSpeechSynthesis() {
   // once, synchronously, inside a button's onClick — before any async work — "unlocks" audio for
   // the rest of the page, so later programmatic speak() calls (including after awaits) work too.
   const unlock = useCallback(() => {
-    if (!supported) return
+    if (!supported || unlockedRef.current) return
+    unlockedRef.current = true
     const utterance = new SpeechSynthesisUtterance(' ')
     utterance.volume = 0
     window.speechSynthesis.speak(utterance)

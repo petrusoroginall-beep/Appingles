@@ -6,13 +6,19 @@ export interface AIReplyResult {
   errorMessage?: string
 }
 
+// Keep only the most recent turns: a shorter payload means less for the model to read before
+// it can start replying, which keeps response time roughly constant instead of growing as the
+// conversation gets longer.
+const MAX_HISTORY_MESSAGES = 12
+
 async function callChatEndpoint(history: ChatMessage[], settings: Settings): Promise<string> {
+  const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       level: settings.level,
-      messages: history.map((m) => ({ role: m.role, text: m.text })),
+      messages: recentHistory.map((m) => ({ role: m.role, text: m.text })),
     }),
   })
 
@@ -37,7 +43,7 @@ export async function getAIReply(history: ChatMessage[], settings: Settings): Pr
       return { text, usedRealAI: true }
     } catch (err) {
       lastError = err
-      if (attempt === 0) await sleep(500)
+      if (attempt === 0) await sleep(300)
     }
   }
   const errorMessage = lastError instanceof Error ? lastError.message : 'Erro desconhecido ao chamar a IA.'
