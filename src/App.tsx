@@ -15,7 +15,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+      <header className="safe-top border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
           <span className="text-2xl">🗽</span>
           <span className="text-lg font-extrabold tracking-tight">Appingles</span>

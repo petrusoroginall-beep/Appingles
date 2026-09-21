@@ -1,0 +1,16 @@
+{
+  "name": "Appingles — Aprenda inglês falando",
+  "short_name": "Appingles",
+  "description": "Aprenda inglês praticando vocabulário, pronúncia e conversação por voz com IA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1c6fed",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
