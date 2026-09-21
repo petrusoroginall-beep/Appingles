@@ -26,7 +26,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
   const [notice, setNotice] = useState<string | null>(null)
   const [aiOnline, setAiOnline] = useState<boolean | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { speak, stop: stopSpeaking, speaking, supported: ttsSupported } = useSpeechSynthesis()
+  const { speak, stop: stopSpeaking, speaking, supported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesis()
   const voiceLang = settings.chatVoiceLang
 
   const { status, start, stop, supported, error: micError } = useSpeechRecognition({
@@ -48,6 +48,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
   async function handleSend(textOverride?: string) {
     const text = (textOverride ?? draft).trim()
     if (!text || thinking) return
+    unlockSpeech()
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', text, createdAt: Date.now() }
     const nextHistory = [...messages, userMessage]
     setMessages(nextHistory)
@@ -146,7 +147,16 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <MicButton listening={listening} onClick={() => (listening ? stop() : start())} disabled={!supported || thinking} size="sm" />
+        <MicButton
+          listening={listening}
+          onClick={() => {
+            unlockSpeech()
+            if (listening) stop()
+            else start()
+          }}
+          disabled={!supported || thinking}
+          size="sm"
+        />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

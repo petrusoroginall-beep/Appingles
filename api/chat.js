@@ -24,7 +24,7 @@ async function callGemini(model, apiKey, contents, level) {
       body: JSON.stringify({
         contents,
         systemInstruction: { parts: [{ text: systemPrompt(level || 'A1') }] },
-        generationConfig: { maxOutputTokens: 220 },
+        generationConfig: { maxOutputTokens: 1024 },
       }),
     },
   )
@@ -39,8 +39,16 @@ async function callGemini(model, apiKey, contents, level) {
   }
 
   const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('').trim()
+  const candidate = data.candidates?.[0]
+  const text = candidate?.content?.parts?.map((p) => p.text || '').join('').trim()
+  const finishReason = candidate?.finishReason
+
   if (!text) return { ok: false, retryable: true, error: 'Resposta vazia da IA.' }
+  // MAX_TOKENS/SAFETY/RECITATION mean the reply was cut short or blocked mid-sentence — treat as
+  // a failure so we retry with the next model instead of showing the user a broken fragment.
+  if (finishReason && finishReason !== 'STOP') {
+    return { ok: false, retryable: true, error: `Gemini (${model}) finishReason=${finishReason}: "${text}"` }
+  }
   return { ok: true, text }
 }
 
