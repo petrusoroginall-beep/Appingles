@@ -9,7 +9,7 @@ import { useProgress } from './hooks/useProgress'
 import { useSettings } from './hooks/useSettings'
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('vocabulario')
+  const [tab, setTab] = useState<Tab>('chat')
   const { progress, recordScore, incrementChatTurns } = useProgress()
   const { settings, setSettings } = useSettings()
 
