@@ -12,15 +12,8 @@ interface ChatPageProps {
   onTurn: () => void
 }
 
-const WELCOME: ChatMessage = {
-  id: 'welcome',
-  role: 'assistant',
-  text: "Hi! I'm Amy, your English conversation partner. Tap the microphone and say hello, or type a message below!",
-  createdAt: Date.now(),
-}
-
 export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
