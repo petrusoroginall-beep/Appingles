@@ -22,6 +22,7 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
   const [draft, setDraft] = useState('')
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [aiOnline, setAiOnline] = useState<boolean | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const { speak, stop: stopSpeaking, speaking, supported: ttsSupported } = useSpeechSynthesis()
 
@@ -51,11 +52,8 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
     onTurn()
 
     const { text: reply, usedRealAI, errorMessage } = await getAIReply(nextHistory, settings)
-    setNotice(
-      !usedRealAI && settings.apiKey
-        ? `Não foi possível usar a IA configurada (${errorMessage ?? 'erro'}). Usando modo de prática offline.`
-        : null,
-    )
+    setAiOnline(usedRealAI)
+    setNotice(!usedRealAI ? `IA indisponível agora (${errorMessage ?? 'erro'}). Usando modo de prática offline.` : null)
     const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: reply, createdAt: Date.now() }
     setMessages((prev) => [...prev, assistantMessage])
     setThinking(false)
@@ -67,7 +65,11 @@ export function ChatPage({ settings, onTurn }: ChatPageProps) {
       <div className="mb-3">
         <h1 className="text-2xl font-bold">Chat de voz com a IA</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {settings.apiKey ? 'Conectado à IA real (Claude).' : 'Modo de prática offline — configure uma chave de API em Configurações para respostas geradas por IA.'}
+          {aiOnline === null
+            ? 'Fale ou digite para começar a conversar com a Amy.'
+            : aiOnline
+              ? 'Conectado à IA. ✨'
+              : 'Modo de prática offline (a IA está indisponível agora).'}
         </p>
       </div>
 

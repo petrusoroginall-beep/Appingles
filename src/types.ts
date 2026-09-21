@@ -37,7 +37,6 @@ export interface ProgressState {
 }
 
 export interface Settings {
-  apiKey: string
   level: Level
   voiceRate: number
   autoSpeak: boolean
