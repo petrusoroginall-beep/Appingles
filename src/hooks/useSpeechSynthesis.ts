@@ -38,5 +38,17 @@ export function useSpeechSynthesis() {
     setSpeaking(false)
   }, [supported])
 
-  return { speak, stop, speaking, supported }
+  // iOS Safari only allows speechSynthesis.speak() to actually produce sound when it is called
+  // synchronously inside a real user-gesture handler (tap/click). A speak() call issued later,
+  // after an `await` (e.g. once an API response comes back), is silently ignored. Calling this
+  // once, synchronously, inside a button's onClick — before any async work — "unlocks" audio for
+  // the rest of the page, so later programmatic speak() calls (including after awaits) work too.
+  const unlock = useCallback(() => {
+    if (!supported) return
+    const utterance = new SpeechSynthesisUtterance(' ')
+    utterance.volume = 0
+    window.speechSynthesis.speak(utterance)
+  }, [supported])
+
+  return { speak, stop, speaking, supported, unlock }
 }
