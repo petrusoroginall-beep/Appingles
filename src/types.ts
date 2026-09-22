@@ -17,6 +17,8 @@ export interface VocabCategory {
 
 export type Tab = 'vocabulario' | 'progresso'
 
+export type Theme = 'dark' | 'light'
+
 export interface ProgressState {
   learnedWordIds: string[]
   bestScoreByWordId: Record<string, number>
