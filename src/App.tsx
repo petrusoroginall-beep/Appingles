@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { Tab } from './types'
 import { TabBar } from './components/TabBar'
 import { VocabularyPage } from './pages/VocabularyPage'
@@ -7,11 +8,27 @@ import { ProgressPage } from './pages/ProgressPage'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useProgress } from './hooks/useProgress'
 import { useTheme } from './hooks/useTheme'
+import { useSpeechSynthesis } from './hooks/useSpeechSynthesis'
+import { unlockFeedbackSound } from './lib/feedbackSound'
 
 export default function App() {
   const [tab, setTab] = useLocalStorage<Tab>('appingles.activeTab', 'vocabulario')
   const { progress, recordScore, restoreProgress } = useProgress()
   const { theme, toggleTheme } = useTheme()
+  const { unlock } = useSpeechSynthesis()
+
+  // iOS Safari won't play any audio (speech synthesis or feedback tones) until it's been
+  // triggered once inside a real user tap. Priming it on the very first tap anywhere in the
+  // app — before the user even reaches a 🔊 button — means every "Ouvir" button works on the
+  // first press, in every tab, instead of only after some other button happened to unlock it.
+  useEffect(() => {
+    function primeAudio() {
+      unlock()
+      unlockFeedbackSound()
+    }
+    document.addEventListener('pointerdown', primeAudio, { once: true })
+    return () => document.removeEventListener('pointerdown', primeAudio)
+  }, [unlock])
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -16,7 +16,7 @@ interface PronunciationCardProps {
 export function PronunciationCard({ word, bestScore, onScored }: PronunciationCardProps) {
   const [flipped, setFlipped] = useState(false)
   const [result, setResult] = useState<{ score: number; heard: string } | null>(null)
-  const { speak, speaking } = useSpeechSynthesis()
+  const { speak, speaking, unlock } = useSpeechSynthesis()
   const { status, transcript, start, stop, supported, error } = useSpeechRecognition({
     lang: 'en-US',
     onResult: (text, isFinal) => {
@@ -70,7 +70,10 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => speak(word.en, { lang: 'en-US' })}
+            onClick={() => {
+              unlock()
+              speak(word.en, { lang: 'en-US' })
+            }}
             disabled={speaking}
             className="flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
