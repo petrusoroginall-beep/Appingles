@@ -30,7 +30,29 @@ export interface DialogueScene {
   lines: DialogueLine[]
 }
 
-export type Tab = 'vocabulario' | 'dialogos' | 'progresso'
+export interface GrammarExample {
+  en: string
+  pt: string
+  phonetic: string
+}
+
+export interface GrammarMistake {
+  wrong: string
+  right: string
+  explanation: string
+}
+
+export interface GrammarTopic {
+  id: string
+  title: string
+  emoji: string
+  summary: string
+  explanation: string
+  examples: GrammarExample[]
+  mistake: GrammarMistake
+}
+
+export type Tab = 'vocabulario' | 'dialogos' | 'gramatica' | 'progresso'
 
 export type Theme = 'dark' | 'light'
 
