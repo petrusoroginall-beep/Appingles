@@ -5,7 +5,6 @@ import type { ProgressState } from '../types'
 const defaultProgress: ProgressState = {
   learnedWordIds: [],
   bestScoreByWordId: {},
-  chatTurns: 0,
   streakDays: 1,
   lastActiveDate: null,
 }
@@ -53,10 +52,5 @@ export function useProgress() {
     [setProgress, touchStreak],
   )
 
-  const incrementChatTurns = useCallback(() => {
-    touchStreak()
-    setProgress((prev) => ({ ...prev, chatTurns: prev.chatTurns + 1 }))
-  }, [setProgress, touchStreak])
-
-  return { progress, recordScore, markLearned, incrementChatTurns }
+  return { progress, recordScore, markLearned }
 }

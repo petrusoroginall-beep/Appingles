@@ -6,10 +6,8 @@ interface TabBarProps {
 }
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'chat', label: 'Chat IA', icon: '🎙️' },
   { id: 'vocabulario', label: 'Vocabulário', icon: '📚' },
   { id: 'progresso', label: 'Progresso', icon: '📈' },
-  { id: 'config', label: 'Ajustes', icon: '⚙️' },
 ]
 
 export function TabBar({ active, onChange }: TabBarProps) {
