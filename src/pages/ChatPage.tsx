@@ -22,16 +22,21 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
   const { speak, stop: stopSpeaking, speaking, supported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesis()
   const voiceLang = settings.chatVoiceLang
 
-  const { status, start, stop, supported, error: micError } = useSpeechRecognition({
+  const { status, transcript, start, stop, supported, error: micError } = useSpeechRecognition({
     lang: voiceLang,
-    onResult: (text, isFinal) => {
-      if (isFinal && text) {
-        setDraft(text)
-        void handleSend(text)
-      }
+    // Keep listening across natural pauses instead of cutting off at the first one, so
+    // speaking slowly or hesitantly doesn't get the sentence chopped in half. The user decides
+    // when they're done by tapping the mic again.
+    continuous: true,
+    onFinish: (text) => {
+      if (text) void handleSend(text)
     },
   })
   const listening = status === 'listening'
+
+  useEffect(() => {
+    if (listening) setDraft(transcript)
+  }, [listening, transcript])
   const micErrorMessage = friendlySpeechError(micError)
 
   useEffect(() => {
@@ -184,7 +189,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
       </div>
       {listening && (
         <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale agora.
+          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale sem pressa e toque no microfone de novo quando terminar.
         </p>
       )}
       {micErrorMessage && (
