@@ -21,7 +21,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
     lang: 'en-US',
     onResult: (text, isFinal) => {
       if (isFinal && text) {
-        const score = scorePronunciation(word.en, text)
+        const score = scorePronunciation(word.en, text, word.phonetic)
         setResult({ score, heard: text })
         onScored(score)
         playFeedbackSound(feedbackForScore(score).tone)

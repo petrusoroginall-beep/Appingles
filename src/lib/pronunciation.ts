@@ -124,8 +124,19 @@ function alignmentScore(targetWords: string[], spokenWords: string[]): number {
   return Math.round(Math.max(0, similarity) * 100)
 }
 
-/** Returns a 0-100 similarity score between a spoken transcript and the target phrase. */
-export function scorePronunciation(target: string, spoken: string): number {
+/**
+ * Returns a 0-100 similarity score between a spoken transcript and the target phrase.
+ *
+ * `phonetic` is the app's own Portuguese-readable respelling of how the word actually sounds
+ * (e.g. "gara" for "Gotta" — the double "t" is a flap that sounds like a light "r"). A speech
+ * recognizer judges what it *heard*, not what's written, so it sometimes transcribes that real
+ * sound as an unrelated-looking English word ("Gotta" heard as "Gaara"). Comparing the spoken
+ * text against that expected sound — not just against the target's literal spelling — catches
+ * exactly this case: someone pronounced the word correctly, but the recognizer's spelling for
+ * that sound doesn't resemble the target's spelling at all. Since the final score is always the
+ * best of every pass, this can only rescue an unfairly low score, never lower a fair one.
+ */
+export function scorePronunciation(target: string, spoken: string, phonetic?: string): number {
   // Expanding a contraction ("gonna" -> "going to") only helps when *both* sides end up with
   // the same word count; when the recognizer instead heard the contraction as a same-sounding
   // single word ("lemme" heard as "lemmy"), forcing the expansion would break the alignment
@@ -133,7 +144,8 @@ export function scorePronunciation(target: string, spoken: string): number {
   // keeping the best result means neither case ever gets unfairly penalized by the other.
   const rawScore = alignmentScore(tokenizeRaw(target), tokenizeRaw(spoken))
   const expandedScore = alignmentScore(tokenizeExpanded(target), tokenizeExpanded(spoken))
-  const score = Math.max(rawScore, expandedScore)
+  const phoneticScore = phonetic ? alignmentScore(tokenizeRaw(phonetic), tokenizeRaw(spoken)) : 0
+  const score = Math.max(rawScore, expandedScore, phoneticScore)
   // A near-perfect attempt should read as a full 100%, not linger at 90-something.
   return score >= 90 ? 100 : score
 }
