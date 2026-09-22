@@ -15,22 +15,33 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function callGemini(model, apiKey, contents) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: systemPrompt() }] },
+async function fetchGemini(model, apiKey, contents, useThinkingBudget) {
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      contents,
+      systemInstruction: { parts: [{ text: systemPrompt() }] },
+      generationConfig: {
         // Some Gemini models spend hidden "thinking" tokens out of this same budget before
-        // writing the visible reply, so a low cap (e.g. 300) can truncate a normal short
-        // answer with finishReason=MAX_TOKENS. Keep this high enough to avoid that.
-        generationConfig: { maxOutputTokens: 1024 },
-      }),
-    },
-  )
+        // writing the visible reply, so keep this high enough that a normal short answer
+        // never gets cut off with finishReason=MAX_TOKENS.
+        maxOutputTokens: 1024,
+        // thinkingBudget: 0 skips that hidden reasoning pass entirely — replies here are
+        // simple translations/short chat, not something that benefits from "thinking", and
+        // skipping it is the single biggest lever on response latency.
+        ...(useThinkingBudget ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
+    }),
+  })
+}
+
+async function callGemini(model, apiKey, contents) {
+  let response = await fetchGemini(model, apiKey, contents, true)
+  if (response.status === 400) {
+    // This model may not support thinkingConfig at all — retry once without it.
+    response = await fetchGemini(model, apiKey, contents, false)
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => '')
