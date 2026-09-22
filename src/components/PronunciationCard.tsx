@@ -3,6 +3,7 @@ import type { VocabWord } from '../types'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { feedbackForScore, scorePronunciation } from '../lib/pronunciation'
+import { playFeedbackSound, unlockFeedbackSound } from '../lib/feedbackSound'
 import { friendlySpeechError } from '../lib/speechErrors'
 import { MicButton } from './MicButton'
 
@@ -23,6 +24,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
         const score = scorePronunciation(word.en, text)
         setResult({ score, heard: text })
         onScored(score)
+        playFeedbackSound(feedbackForScore(score).tone)
       }
     },
   })
@@ -77,7 +79,11 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
           {supported ? (
             <MicButton
               listening={listening}
-              onClick={() => (listening ? stop() : start())}
+              onClick={() => {
+                unlockFeedbackSound()
+                if (listening) stop()
+                else start()
+              }}
               size="sm"
             />
           ) : null}
