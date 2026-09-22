@@ -26,10 +26,11 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     lang: voiceLang,
     // Keep listening across natural pauses instead of cutting off at the first one, so
     // speaking slowly or hesitantly doesn't get the sentence chopped in half. It auto-sends
-    // 5 seconds after the last bit of speech — no need to tap the mic again — but tapping
-    // it still stops (and sends) sooner if you're done early.
+    // shortly after the last bit of speech — no need to tap the mic again — but tapping
+    // it still stops (and sends) sooner if you're done early. Kept short: any longer and the
+    // wait itself starts feeling like the app is stuck before the AI has even been asked.
     continuous: true,
-    silenceTimeoutMs: 5000,
+    silenceTimeoutMs: 1800,
     onFinish: (text) => {
       if (text) void handleSend(text)
     },
