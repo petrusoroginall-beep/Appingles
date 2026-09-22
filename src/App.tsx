@@ -1,17 +1,13 @@
 import type { Tab } from './types'
 import { TabBar } from './components/TabBar'
 import { VocabularyPage } from './pages/VocabularyPage'
-import { ChatPage } from './pages/ChatPage'
 import { ProgressPage } from './pages/ProgressPage'
-import { SettingsPage } from './pages/SettingsPage'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useProgress } from './hooks/useProgress'
-import { useSettings } from './hooks/useSettings'
 
 export default function App() {
-  const [tab, setTab] = useLocalStorage<Tab>('appingles.activeTab', 'chat')
-  const { progress, recordScore, incrementChatTurns } = useProgress()
-  const { settings, setSettings } = useSettings()
+  const [tab, setTab] = useLocalStorage<Tab>('appingles.activeTab', 'vocabulario')
+  const { progress, recordScore } = useProgress()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -24,9 +20,7 @@ export default function App() {
 
       <main className="flex-1 pb-4">
         {tab === 'vocabulario' && <VocabularyPage progress={progress} onScored={recordScore} />}
-        {tab === 'chat' && <ChatPage settings={settings} onSettingsChange={setSettings} onTurn={incrementChatTurns} />}
         {tab === 'progresso' && <ProgressPage progress={progress} />}
-        {tab === 'config' && <SettingsPage settings={settings} onChange={setSettings} />}
       </main>
 
       <TabBar active={tab} onChange={setTab} />

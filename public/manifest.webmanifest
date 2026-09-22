@@ -1,7 +1,7 @@
 {
   "name": "Appingles — Aprenda inglês falando",
   "short_name": "Appingles",
-  "description": "Aprenda inglês praticando vocabulário, pronúncia e conversação por voz com IA.",
+  "description": "Aprenda inglês praticando vocabulário e pronúncia.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

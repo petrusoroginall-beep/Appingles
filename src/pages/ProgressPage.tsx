@@ -15,10 +15,9 @@ export function ProgressPage({ progress }: ProgressPageProps) {
       <h1 className="text-2xl font-bold">Seu progresso</h1>
       <p className="mt-1 text-slate-500 dark:text-slate-400">Continue praticando todos os dias para melhorar sua fluência.</p>
 
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <div className="mt-5 grid grid-cols-2 gap-3">
         <StatTile label="Palavras aprendidas" value={`${learned}/${totalWords}`} />
         <StatTile label="Sequência de dias" value={`🔥 ${progress.streakDays}`} />
-        <StatTile label="Conversas no chat" value={String(progress.chatTurns)} />
       </div>
 
       <div className="mt-6">

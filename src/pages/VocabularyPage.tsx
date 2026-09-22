@@ -63,7 +63,7 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
             </p>
             {searchResults.length === 0 && (
               <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-                Nenhuma palavra encontrada. Tente outro termo, ou pergunte diretamente no Chat IA.
+                Nenhuma palavra encontrada. Tente outro termo de busca.
               </p>
             )}
             {searchResults.map((w) => (

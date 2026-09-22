@@ -15,28 +15,11 @@ export interface VocabCategory {
   words: VocabWord[]
 }
 
-export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  text: string
-  createdAt: number
-  corrected?: string
-}
-
-export type Tab = 'vocabulario' | 'chat' | 'progresso' | 'config'
+export type Tab = 'vocabulario' | 'progresso'
 
 export interface ProgressState {
   learnedWordIds: string[]
   bestScoreByWordId: Record<string, number>
-  chatTurns: number
   streakDays: number
   lastActiveDate: string | null
-}
-
-export type ChatVoiceLang = 'en-US' | 'pt-BR'
-
-export interface Settings {
-  voiceRate: number
-  autoSpeak: boolean
-  chatVoiceLang: ChatVoiceLang
 }
