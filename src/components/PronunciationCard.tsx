@@ -4,7 +4,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { feedbackForScore, scorePronunciation } from '../lib/pronunciation'
 import { playFeedbackSound, unlockFeedbackSound } from '../lib/feedbackSound'
-import { friendlySpeechError } from '../lib/speechErrors'
+import { friendlySpeechError, micPermissionInstructions } from '../lib/speechErrors'
 import { MicButton } from './MicButton'
 
 interface PronunciationCardProps {
@@ -17,7 +17,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
   const [flipped, setFlipped] = useState(false)
   const [result, setResult] = useState<{ score: number; heard: string } | null>(null)
   const { speak, speaking, unlock } = useSpeechSynthesis()
-  const { status, transcript, start, stop, supported, error } = useSpeechRecognition({
+  const { status, transcript, start, stop, supported, error, permission } = useSpeechRecognition({
     lang: 'en-US',
     onResult: (text, isFinal) => {
       if (isFinal && text) {
@@ -95,6 +95,11 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
         {!supported && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
             Reconhecimento de voz não é suportado neste navegador. Use o Chrome para praticar a pronúncia por voz.
+          </p>
+        )}
+        {supported && permission === 'denied' && !error && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            🎤 O microfone está bloqueado para este site. {micPermissionInstructions()}
           </p>
         )}
         {friendlySpeechError(error) && <p className="text-xs text-red-500">{friendlySpeechError(error)}</p>}
