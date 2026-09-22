@@ -18,15 +18,17 @@ export default function App() {
   const { unlock } = useSpeechSynthesis()
 
   // iOS Safari won't play any audio (speech synthesis or feedback tones) until it's been
-  // triggered once inside a real user tap. Priming it on the very first tap anywhere in the
-  // app — before the user even reaches a 🔊 button — means every "Ouvir" button works on the
-  // first press, in every tab, instead of only after some other button happened to unlock it.
+  // triggered inside a real user tap. Priming on every tap — not just the first one — means
+  // it also self-heals if the audio engine gets suspended mid-session (e.g. after the
+  // microphone takes over the audio hardware for speech recognition and gives it back), not
+  // just on the very first tap of a fresh visit. Both calls are cheap no-ops once already
+  // unlocked/running, so doing this on every tap costs nothing.
   useEffect(() => {
     function primeAudio() {
       unlock()
       unlockFeedbackSound()
     }
-    document.addEventListener('pointerdown', primeAudio, { once: true })
+    document.addEventListener('pointerdown', primeAudio)
     return () => document.removeEventListener('pointerdown', primeAudio)
   }, [unlock])
 

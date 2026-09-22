@@ -1,6 +1,10 @@
 let audioContext: AudioContext | null = null
 
 function getContext() {
+  // A context can end up 'closed' after some mobile browsers reclaim audio hardware (e.g.
+  // switching to the microphone for speech recognition and back) — resume() does nothing on a
+  // closed context, so it has to be recreated instead of reused.
+  if (audioContext && audioContext.state === 'closed') audioContext = null
   if (!audioContext) {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioContext = new Ctor()
