@@ -6,30 +6,21 @@ interface UseSpeechRecognitionOptions {
   lang?: string
   /** Keep listening across pauses instead of stopping after the first detected pause. */
   continuous?: boolean
-  /** With `continuous`, auto-stop this many ms after the last bit of speech (no need to re-tap). */
-  silenceTimeoutMs?: number
   onResult?: (transcript: string, isFinal: boolean) => void
-  /** Fires once recognition actually ends (manual stop or silence timeout), with everything captured. */
+  /** Fires once recognition actually ends (manual stop), with everything captured. */
   onFinish?: (transcript: string) => void
 }
 
-export function useSpeechRecognition({
-  lang = 'en-US',
-  continuous = false,
-  silenceTimeoutMs,
-  onResult,
-  onFinish,
-}: UseSpeechRecognitionOptions = {}) {
+export function useSpeechRecognition({ lang = 'en-US', continuous = false, onResult, onFinish }: UseSpeechRecognitionOptions = {}) {
   const [status, setStatus] = useState<RecognitionStatus>('idle')
   const [transcript, setTranscript] = useState('')
   const [error, setError] = useState<string | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalTextRef = useRef('')
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Some engines (notably mobile Safari/WebKit) end a recognition session on their own short
   // internal pause-detection regardless of the `continuous` flag. This tracks whether an `onend`
   // was actually requested by us (real stop) vs. the engine ending on its own (in which case we
-  // silently restart so the user never feels a cutoff mid-thought).
+  // silently restart so the user never feels a cutoff mid-sentence).
   const manualStopRef = useRef(false)
   const onResultRef = useRef(onResult)
   onResultRef.current = onResult
@@ -37,24 +28,6 @@ export function useSpeechRecognition({
   onFinishRef.current = onFinish
 
   const supported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
-
-  const clearSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = null
-    }
-  }, [])
-
-  const armSilenceTimer = useCallback(() => {
-    if (!silenceTimeoutMs) return
-    clearSilenceTimer()
-    silenceTimerRef.current = setTimeout(() => {
-      // This is the only thing that should end listening for real: real silence since the
-      // last bit of speech, not any engine-internal timeout.
-      manualStopRef.current = true
-      recognitionRef.current?.stop()
-    }, silenceTimeoutMs)
-  }, [silenceTimeoutMs, clearSilenceTimer])
 
   useEffect(() => {
     if (!supported) {
@@ -81,7 +54,6 @@ export function useSpeechRecognition({
       const combined = `${finalTextRef.current} ${interimText}`.trim()
       setTranscript(combined)
       onResultRef.current?.(combined, Boolean(finalTextRef.current) && !interimText)
-      armSilenceTimer()
     }
     recognition.onerror = (event) => {
       const benign = event.error === 'no-speech' || event.error === 'aborted'
@@ -91,21 +63,19 @@ export function useSpeechRecognition({
         return
       }
       manualStopRef.current = true
-      clearSilenceTimer()
       setError(event.error)
       setStatus('error')
     }
     recognition.onend = () => {
       if (continuous && !manualStopRef.current) {
-        // The engine ended this stretch on its own, but the user hasn't stopped and we haven't
-        // hit real silence yet — resume listening without losing what's been said so far.
+        // The engine ended this stretch on its own, but the user hasn't tapped stop — resume
+        // listening without losing what's been said so far.
         setTimeout(() => {
           try {
             recognitionRef.current?.start()
           } catch {
             // couldn't resume — fall through to finishing with whatever we have
             manualStopRef.current = true
-            clearSilenceTimer()
             setStatus('idle')
             const finished = finalTextRef.current.trim()
             finalTextRef.current = ''
@@ -114,7 +84,6 @@ export function useSpeechRecognition({
         }, 0)
         return
       }
-      clearSilenceTimer()
       setStatus((current) => (current === 'listening' ? 'idle' : current))
       const finished = finalTextRef.current.trim()
       finalTextRef.current = ''
@@ -124,14 +93,13 @@ export function useSpeechRecognition({
     recognitionRef.current = recognition
     return () => {
       manualStopRef.current = true
-      clearSilenceTimer()
       recognition.onresult = null
       recognition.onerror = null
       recognition.onend = null
       recognition.onstart = null
       recognition.abort()
     }
-  }, [lang, continuous, supported, armSilenceTimer, clearSilenceTimer])
+  }, [lang, continuous, supported])
 
   const start = useCallback(() => {
     if (!recognitionRef.current) return
@@ -144,8 +112,6 @@ export function useSpeechRecognition({
     setStatus('listening')
     try {
       recognitionRef.current.start()
-      // Don't arm the silence timer yet — it should only count down after the user has said
-      // something, not while the mic is open waiting for them to start talking.
     } catch {
       // already started — ignore
     }
@@ -153,9 +119,8 @@ export function useSpeechRecognition({
 
   const stop = useCallback(() => {
     manualStopRef.current = true
-    clearSilenceTimer()
     recognitionRef.current?.stop()
-  }, [clearSilenceTimer])
+  }, [])
 
   return { status, transcript, error, supported, start, stop }
 }
