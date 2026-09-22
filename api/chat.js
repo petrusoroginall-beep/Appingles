@@ -25,9 +25,10 @@ async function callGemini(model, apiKey, contents) {
       body: JSON.stringify({
         contents,
         systemInstruction: { parts: [{ text: systemPrompt() }] },
-        // Replies are meant to be 1-3 short sentences, so a lower cap keeps generation time
-        // down without risking truncation of a normal reply.
-        generationConfig: { maxOutputTokens: 300 },
+        // Some Gemini models spend hidden "thinking" tokens out of this same budget before
+        // writing the visible reply, so a low cap (e.g. 300) can truncate a normal short
+        // answer with finishReason=MAX_TOKENS. Keep this high enough to avoid that.
+        generationConfig: { maxOutputTokens: 1024 },
       }),
     },
   )
