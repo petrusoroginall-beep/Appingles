@@ -15,7 +15,22 @@ export interface VocabCategory {
   words: VocabWord[]
 }
 
-export type Tab = 'vocabulario' | 'progresso'
+export interface DialogueLine {
+  speaker: string
+  en: string
+  pt: string
+  phonetic: string
+}
+
+export interface DialogueScene {
+  id: string
+  title: string
+  emoji: string
+  description: string
+  lines: DialogueLine[]
+}
+
+export type Tab = 'vocabulario' | 'dialogos' | 'progresso'
 
 export type Theme = 'dark' | 'light'
 
