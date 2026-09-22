@@ -139,6 +139,23 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
         </div>
       )}
 
+      {ttsSupported && (
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <span aria-hidden="true">🐢</span>
+          <input
+            type="range"
+            min={0.5}
+            max={1.5}
+            step={0.05}
+            value={settings.voiceRate}
+            onChange={(e) => onSettingsChange({ ...settings, voiceRate: Number(e.target.value) })}
+            className="w-32 accent-brand-600"
+            aria-label="Velocidade da voz da IA"
+          />
+          <span aria-hidden="true">🐇</span>
+        </div>
+      )}
+
       <div className="mt-3 flex items-center gap-3">
         <MicButton
           listening={listening}

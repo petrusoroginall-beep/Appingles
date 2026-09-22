@@ -22,18 +22,6 @@ export function SettingsPage({ settings, onChange }: SettingsPageProps) {
             className="h-5 w-5 accent-brand-600"
           />
         </label>
-        <label className="mt-4 block text-sm">
-          Velocidade da voz: {settings.voiceRate.toFixed(2)}x
-          <input
-            type="range"
-            min={0.5}
-            max={1.5}
-            step={0.05}
-            value={settings.voiceRate}
-            onChange={(e) => onChange({ ...settings, voiceRate: Number(e.target.value) })}
-            className="mt-2 w-full accent-brand-600"
-          />
-        </label>
       </section>
     </div>
   )
