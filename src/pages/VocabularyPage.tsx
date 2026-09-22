@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { vocabulary } from '../data/vocabulary'
 import { PronunciationCard } from '../components/PronunciationCard'
+import { ListeningQuiz } from '../components/ListeningQuiz'
 import type { ProgressState } from '../types'
 
 interface VocabularyPageProps {
@@ -23,6 +24,7 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [wordIndex, setWordIndex] = useState(0)
   const [query, setQuery] = useState('')
+  const [listeningMode, setListeningMode] = useState(false)
 
   const category = useMemo(() => vocabulary.find((c) => c.id === categoryId) ?? null, [categoryId])
 
@@ -39,6 +41,7 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
     const idx = cat?.words.findIndex((w) => w.id === id) ?? 0
     setCategoryId(catId)
     setWordIndex(Math.max(0, idx))
+    setListeningMode(false)
   }
 
   if (!category) {
@@ -92,6 +95,7 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
                   onClick={() => {
                     setCategoryId(cat.id)
                     setWordIndex(0)
+                    setListeningMode(false)
                   }}
                   className="flex flex-col items-start gap-1 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
                 >
@@ -126,34 +130,51 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
         <h2 className="text-xl font-bold">
           {category.emoji} {category.title}
         </h2>
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          {wordIndex + 1}/{category.words.length}
-        </span>
+        {!listeningMode && (
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {wordIndex + 1}/{category.words.length}
+          </span>
+        )}
       </div>
 
-      <PronunciationCard
-        key={word.id}
-        word={word}
-        bestScore={progress.bestScoreByWordId[word.id]}
-        onScored={(score) => onScored(word.id, score)}
-      />
+      {!listeningMode && (
+        <button
+          onClick={() => setListeningMode(true)}
+          className="mb-4 w-full rounded-xl border border-dashed border-brand-400 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-500 dark:text-brand-400 dark:hover:bg-brand-900/20"
+        >
+          🎧 Exercício de escuta desta categoria
+        </button>
+      )}
 
-      <div className="mt-4 flex justify-between gap-3">
-        <button
-          onClick={() => setWordIndex((i) => Math.max(0, i - 1))}
-          disabled={isFirst}
-          className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-40 dark:border-slate-700"
-        >
-          ← Anterior
-        </button>
-        <button
-          onClick={() => setWordIndex((i) => Math.min(category.words.length - 1, i + 1))}
-          disabled={isLast}
-          className="rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          Próxima →
-        </button>
-      </div>
+      {listeningMode ? (
+        <ListeningQuiz key={category.id} words={category.words} onExit={() => setListeningMode(false)} />
+      ) : (
+        <>
+          <PronunciationCard
+            key={word.id}
+            word={word}
+            bestScore={progress.bestScoreByWordId[word.id]}
+            onScored={(score) => onScored(word.id, score)}
+          />
+
+          <div className="mt-4 flex justify-between gap-3">
+            <button
+              onClick={() => setWordIndex((i) => Math.max(0, i - 1))}
+              disabled={isFirst}
+              className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-40 dark:border-slate-700"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() => setWordIndex((i) => Math.min(category.words.length - 1, i + 1))}
+              disabled={isLast}
+              className="rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              Próxima →
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
