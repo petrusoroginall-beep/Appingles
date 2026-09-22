@@ -26,6 +26,11 @@ export function useSpeechRecognition({
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalTextRef = useRef('')
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Some engines (notably mobile Safari/WebKit) end a recognition session on their own short
+  // internal pause-detection regardless of the `continuous` flag. This tracks whether an `onend`
+  // was actually requested by us (real stop) vs. the engine ending on its own (in which case we
+  // silently restart so the user never feels a cutoff mid-thought).
+  const manualStopRef = useRef(false)
   const onResultRef = useRef(onResult)
   onResultRef.current = onResult
   const onFinishRef = useRef(onFinish)
@@ -44,6 +49,9 @@ export function useSpeechRecognition({
     if (!silenceTimeoutMs) return
     clearSilenceTimer()
     silenceTimerRef.current = setTimeout(() => {
+      // This is the only thing that should end listening for real: real silence since the
+      // last bit of speech, not any engine-internal timeout.
+      manualStopRef.current = true
       recognitionRef.current?.stop()
     }, silenceTimeoutMs)
   }, [silenceTimeoutMs, clearSilenceTimer])
@@ -76,11 +84,36 @@ export function useSpeechRecognition({
       armSilenceTimer()
     }
     recognition.onerror = (event) => {
+      const benign = event.error === 'no-speech' || event.error === 'aborted'
+      if (continuous && !manualStopRef.current && benign) {
+        // The engine gave up on this stretch of silence on its own — onend follows and will
+        // restart us. Not a real error from the user's point of view.
+        return
+      }
+      manualStopRef.current = true
       clearSilenceTimer()
       setError(event.error)
       setStatus('error')
     }
     recognition.onend = () => {
+      if (continuous && !manualStopRef.current) {
+        // The engine ended this stretch on its own, but the user hasn't stopped and we haven't
+        // hit real silence yet — resume listening without losing what's been said so far.
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start()
+          } catch {
+            // couldn't resume — fall through to finishing with whatever we have
+            manualStopRef.current = true
+            clearSilenceTimer()
+            setStatus('idle')
+            const finished = finalTextRef.current.trim()
+            finalTextRef.current = ''
+            if (finished) onFinishRef.current?.(finished)
+          }
+        }, 0)
+        return
+      }
       clearSilenceTimer()
       setStatus((current) => (current === 'listening' ? 'idle' : current))
       const finished = finalTextRef.current.trim()
@@ -90,6 +123,7 @@ export function useSpeechRecognition({
 
     recognitionRef.current = recognition
     return () => {
+      manualStopRef.current = true
       clearSilenceTimer()
       recognition.onresult = null
       recognition.onerror = null
@@ -101,6 +135,7 @@ export function useSpeechRecognition({
 
   const start = useCallback(() => {
     if (!recognitionRef.current) return
+    manualStopRef.current = false
     setError(null)
     setTranscript('')
     finalTextRef.current = ''
@@ -117,6 +152,7 @@ export function useSpeechRecognition({
   }, [])
 
   const stop = useCallback(() => {
+    manualStopRef.current = true
     clearSilenceTimer()
     recognitionRef.current?.stop()
   }, [clearSilenceTimer])
