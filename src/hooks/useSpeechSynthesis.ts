@@ -16,8 +16,11 @@ export function useSpeechSynthesis() {
   }, [supported])
 
   const speak = useCallback(
-    (text: string, opts: { rate?: number; lang?: string } = {}) => {
-      if (!supported || !text) return
+    (text: string, opts: { rate?: number; lang?: string; onEnd?: () => void } = {}) => {
+      if (!supported || !text) {
+        opts.onEnd?.()
+        return
+      }
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = opts.lang ?? 'en-US'
@@ -25,8 +28,14 @@ export function useSpeechSynthesis() {
       const englishVoice = voices.find((v) => v.lang.startsWith('en'))
       if (englishVoice) utterance.voice = englishVoice
       utterance.onstart = () => setSpeaking(true)
-      utterance.onend = () => setSpeaking(false)
-      utterance.onerror = () => setSpeaking(false)
+      utterance.onend = () => {
+        setSpeaking(false)
+        opts.onEnd?.()
+      }
+      utterance.onerror = () => {
+        setSpeaking(false)
+        opts.onEnd?.()
+      }
       utteranceRef.current = utterance
       window.speechSynthesis.speak(utterance)
     },
