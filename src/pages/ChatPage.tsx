@@ -49,7 +49,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     setThinking(true)
     onTurn()
 
-    const { text: reply, usedRealAI, errorMessage } = await getAIReply(nextHistory, settings)
+    const { text: reply, usedRealAI, errorMessage } = await getAIReply(nextHistory)
     setAiOnline(usedRealAI)
     setNotice(!usedRealAI ? `IA indisponível agora (${errorMessage ?? 'erro'}). Usando modo de prática offline.` : null)
     const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: reply, createdAt: Date.now() }

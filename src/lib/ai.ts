@@ -1,4 +1,4 @@
-import type { ChatMessage, Level, Settings } from '../types'
+import type { ChatMessage } from '../types'
 
 export interface AIReplyResult {
   text: string
@@ -11,13 +11,12 @@ export interface AIReplyResult {
 // conversation gets longer.
 const MAX_HISTORY_MESSAGES = 12
 
-async function callChatEndpoint(history: ChatMessage[], settings: Settings): Promise<string> {
+async function callChatEndpoint(history: ChatMessage[]): Promise<string> {
   const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      level: settings.level,
       messages: recentHistory.map((m) => ({ role: m.role, text: m.text })),
     }),
   })
@@ -33,13 +32,13 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function getAIReply(history: ChatMessage[], settings: Settings): Promise<AIReplyResult> {
+export async function getAIReply(history: ChatMessage[]): Promise<AIReplyResult> {
   let lastError: unknown
   // A "Load failed" / network-level error can be a one-off blip on mobile connections,
   // so retry once before giving up and falling back to the offline tutor.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const text = await callChatEndpoint(history, settings)
+      const text = await callChatEndpoint(history)
       return { text, usedRealAI: true }
     } catch (err) {
       lastError = err
@@ -71,7 +70,7 @@ function pickFollowUp(seed: number) {
   return FOLLOW_UPS[seed % FOLLOW_UPS.length]
 }
 
-export function fallbackReply(history: ChatMessage[], _level?: Level): string {
+export function fallbackReply(history: ChatMessage[]): string {
   const lastUser = [...history].reverse().find((m) => m.role === 'user')
   const text = (lastUser?.text ?? '').trim()
   const lower = text.toLowerCase()

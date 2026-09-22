@@ -1,10 +1,10 @@
 const MODELS = ['gemini-3.6-flash', 'gemini-flash-latest']
 const RETRYABLE_STATUS = new Set([404, 429, 500, 503])
 
-function systemPrompt(level) {
-  return `You are "Amy", a warm, patient English conversation tutor for a Brazilian Portuguese speaker learning English at level ${level}.
+function systemPrompt() {
+  return `You are "Amy", a warm, patient English conversation tutor for a Brazilian Portuguese speaker learning English.
 Rules:
-- Always reply mostly in English, using simple vocabulary suited to level ${level}.
+- Always reply mostly in English, using clear, natural vocabulary a learner can follow.
 - If the student asks (in Portuguese or English) how to say or translate a word/phrase into English — e.g. "como se fala X em inglês", "how do you say X", "what does X mean" — always give the correct, complete English translation explicitly, in quotes, before anything else. Never just repeat the Portuguese phrase back.
 - Keep replies short: 1-3 sentences, plus one short follow-up question to keep the conversation going.
 - If the student's last message has a grammar or word-choice mistake, gently point it out with the corrected sentence in quotes before continuing the conversation. If there is no mistake, do not invent one.
@@ -16,7 +16,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function callGemini(model, apiKey, contents, level) {
+async function callGemini(model, apiKey, contents) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -24,7 +24,7 @@ async function callGemini(model, apiKey, contents, level) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         contents,
-        systemInstruction: { parts: [{ text: systemPrompt(level || 'A1') }] },
+        systemInstruction: { parts: [{ text: systemPrompt() }] },
         // Replies are meant to be 1-3 short sentences, so a lower cap keeps generation time
         // down without risking truncation of a normal reply.
         generationConfig: { maxOutputTokens: 300 },
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     return
   }
 
-  const { messages, level } = req.body || {}
+  const { messages } = req.body || {}
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: 'É necessário enviar um array de mensagens.' })
     return
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     // Try each model, with one short-delay retry per model for transient (503/429) overload errors.
     for (const model of MODELS) {
       for (let attempt = 0; attempt < 2; attempt++) {
-        const result = await callGemini(model, apiKey, contents, level)
+        const result = await callGemini(model, apiKey, contents)
         if (result.ok) {
           res.status(200).json({ text: result.text })
           return
