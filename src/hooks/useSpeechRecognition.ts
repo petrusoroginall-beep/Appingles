@@ -109,11 +109,12 @@ export function useSpeechRecognition({
     setStatus('listening')
     try {
       recognitionRef.current.start()
-      armSilenceTimer()
+      // Don't arm the silence timer yet — it should only count down after the user has said
+      // something, not while the mic is open waiting for them to start talking.
     } catch {
       // already started — ignore
     }
-  }, [armSilenceTimer])
+  }, [])
 
   const stop = useCallback(() => {
     clearSilenceTimer()
