@@ -31,6 +31,9 @@ export function useSpeechSynthesis() {
       }
       utterance.onerror = () => setSpeaking(false)
       utteranceRef.current = utterance
+      // Some mobile browsers leave the engine "paused" after the tab was backgrounded, which
+      // makes newly queued utterances sit silently instead of playing.
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume()
       window.speechSynthesis.speak(utterance)
     },
     [supported, voices],
