@@ -53,7 +53,7 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="🔍 Buscar qualquer palavra (em português ou inglês)..."
-          className="mt-4 w-full rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
+          className="mt-4 w-full rounded-full border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
         />
 
         {query.trim() ? (

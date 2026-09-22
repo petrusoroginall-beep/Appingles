@@ -155,7 +155,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder={supported ? 'Fale ou digite em inglês ou português...' : 'Digite em inglês ou português...'}
-          className="flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
+          className="flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"
         />
         <button
           onClick={() => handleSend()}
