@@ -1,6 +1,5 @@
 import type { Tab } from './types'
 import { TabBar } from './components/TabBar'
-import { StreakReminder } from './components/StreakReminder'
 import { VocabularyPage } from './pages/VocabularyPage'
 import { DialoguesPage } from './pages/DialoguesPage'
 import { ProgressPage } from './pages/ProgressPage'
@@ -31,8 +30,6 @@ export default function App() {
           </button>
         </div>
       </header>
-
-      <StreakReminder progress={progress} />
 
       <main className="flex-1 pb-4">
         {tab === 'vocabulario' && <VocabularyPage progress={progress} onScored={recordScore} />}
