@@ -6,23 +6,47 @@ interface UseSpeechRecognitionOptions {
   lang?: string
   /** Keep listening across pauses instead of stopping after the first detected pause. */
   continuous?: boolean
+  /** With `continuous`, auto-stop this many ms after the last bit of speech (no need to re-tap). */
+  silenceTimeoutMs?: number
   onResult?: (transcript: string, isFinal: boolean) => void
-  /** Fires once recognition actually ends (manual stop or timeout), with everything captured. */
+  /** Fires once recognition actually ends (manual stop or silence timeout), with everything captured. */
   onFinish?: (transcript: string) => void
 }
 
-export function useSpeechRecognition({ lang = 'en-US', continuous = false, onResult, onFinish }: UseSpeechRecognitionOptions = {}) {
+export function useSpeechRecognition({
+  lang = 'en-US',
+  continuous = false,
+  silenceTimeoutMs,
+  onResult,
+  onFinish,
+}: UseSpeechRecognitionOptions = {}) {
   const [status, setStatus] = useState<RecognitionStatus>('idle')
   const [transcript, setTranscript] = useState('')
   const [error, setError] = useState<string | null>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalTextRef = useRef('')
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onResultRef = useRef(onResult)
   onResultRef.current = onResult
   const onFinishRef = useRef(onFinish)
   onFinishRef.current = onFinish
 
   const supported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = null
+    }
+  }, [])
+
+  const armSilenceTimer = useCallback(() => {
+    if (!silenceTimeoutMs) return
+    clearSilenceTimer()
+    silenceTimerRef.current = setTimeout(() => {
+      recognitionRef.current?.stop()
+    }, silenceTimeoutMs)
+  }, [silenceTimeoutMs, clearSilenceTimer])
 
   useEffect(() => {
     if (!supported) {
@@ -49,12 +73,15 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
       const combined = `${finalTextRef.current} ${interimText}`.trim()
       setTranscript(combined)
       onResultRef.current?.(combined, Boolean(finalTextRef.current) && !interimText)
+      armSilenceTimer()
     }
     recognition.onerror = (event) => {
+      clearSilenceTimer()
       setError(event.error)
       setStatus('error')
     }
     recognition.onend = () => {
+      clearSilenceTimer()
       setStatus((current) => (current === 'listening' ? 'idle' : current))
       const finished = finalTextRef.current.trim()
       finalTextRef.current = ''
@@ -63,13 +90,14 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
 
     recognitionRef.current = recognition
     return () => {
+      clearSilenceTimer()
       recognition.onresult = null
       recognition.onerror = null
       recognition.onend = null
       recognition.onstart = null
       recognition.abort()
     }
-  }, [lang, continuous, supported])
+  }, [lang, continuous, supported, armSilenceTimer, clearSilenceTimer])
 
   const start = useCallback(() => {
     if (!recognitionRef.current) return
@@ -81,14 +109,16 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
     setStatus('listening')
     try {
       recognitionRef.current.start()
+      armSilenceTimer()
     } catch {
       // already started — ignore
     }
-  }, [])
+  }, [armSilenceTimer])
 
   const stop = useCallback(() => {
+    clearSilenceTimer()
     recognitionRef.current?.stop()
-  }, [])
+  }, [clearSilenceTimer])
 
   return { status, transcript, error, supported, start, stop }
 }
