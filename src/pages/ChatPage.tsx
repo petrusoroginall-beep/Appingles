@@ -18,6 +18,14 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [aiOnline, setAiOnline] = useState<boolean | null>(null)
+  // Hands-free "conversation mode", like a phone call: once on, the mic keeps cycling
+  // listen -> send -> AI replies & speaks -> listen again, with no need to re-tap between turns.
+  const [conversationOn, setConversationOnState] = useState(false)
+  const conversationOnRef = useRef(false)
+  function setConversationOn(value: boolean) {
+    conversationOnRef.current = value
+    setConversationOnState(value)
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
   const { speak, stop: stopSpeaking, speaking, supported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesis()
   const voiceLang = settings.chatVoiceLang
@@ -27,8 +35,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     // Keep listening across natural pauses instead of cutting off at the first one, so
     // speaking slowly or hesitantly doesn't get the sentence chopped in half. It auto-sends
     // shortly after the last bit of speech — no need to tap the mic again — but tapping
-    // it still stops (and sends) sooner if you're done early. Kept short: any longer and the
-    // wait itself starts feeling like the app is stuck before the AI has even been asked.
+    // it still stops (and sends) sooner if you're done early.
     continuous: true,
     silenceTimeoutMs: 2500,
     onFinish: (text) => {
@@ -41,6 +48,12 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     if (listening) setDraft(transcript)
   }, [listening, transcript])
   const micErrorMessage = friendlySpeechError(micError)
+
+  useEffect(() => {
+    // A real mic error (not the benign engine-restart cases the hook already absorbs) means
+    // hands-free mode can't continue — drop back to idle instead of looking stuck.
+    if (micError) setConversationOn(false)
+  }, [micError])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -63,7 +76,26 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: reply, createdAt: Date.now() }
     setMessages((prev) => [...prev, assistantMessage])
     setThinking(false)
-    if (settings.autoSpeak) speak(reply, { rate: settings.voiceRate })
+
+    // In hands-free conversation mode, keep the loop going: resume listening once the reply
+    // has been spoken (or immediately, if it isn't being spoken at all).
+    const resumeListening = () => {
+      if (conversationOnRef.current) start()
+    }
+    if (settings.autoSpeak) speak(reply, { rate: settings.voiceRate, onEnd: resumeListening })
+    else resumeListening()
+  }
+
+  function toggleConversation() {
+    unlockSpeech()
+    if (conversationOn) {
+      setConversationOn(false)
+      stop()
+      stopSpeaking()
+    } else {
+      setConversationOn(true)
+      start()
+    }
   }
 
   return (
@@ -127,7 +159,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
           <div className="flex overflow-hidden rounded-full border border-slate-300 dark:border-slate-700">
             <button
               onClick={() => onSettingsChange({ ...settings, chatVoiceLang: 'en-US' })}
-              disabled={listening}
+              disabled={conversationOn}
               className={`px-3 py-1 text-xs font-medium transition ${
                 voiceLang === 'en-US' ? 'bg-brand-600 text-white' : 'text-slate-500 dark:text-slate-400'
               }`}
@@ -136,7 +168,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
             </button>
             <button
               onClick={() => onSettingsChange({ ...settings, chatVoiceLang: 'pt-BR' })}
-              disabled={listening}
+              disabled={conversationOn}
               className={`px-3 py-1 text-xs font-medium transition ${
                 voiceLang === 'pt-BR' ? 'bg-brand-600 text-white' : 'text-slate-500 dark:text-slate-400'
               }`}
@@ -165,16 +197,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <MicButton
-          listening={listening}
-          onClick={() => {
-            unlockSpeech()
-            if (listening) stop()
-            else start()
-          }}
-          disabled={!supported || thinking}
-          size="sm"
-        />
+        <MicButton listening={conversationOn} onClick={toggleConversation} disabled={!supported} size="sm" />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -190,9 +213,16 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
           Enviar
         </button>
       </div>
-      {listening && (
+      {conversationOn && (
         <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale sem pressa, envio automático após alguns segundos de silêncio.
+          {listening
+            ? `Ouvindo em ${voiceLang === 'en-US' ? 'inglês' : 'português'}... fale sem pressa.`
+            : thinking
+              ? 'Amy está pensando...'
+              : speaking
+                ? 'Amy está falando...'
+                : 'Conversa ativa — vou voltar a ouvir em seguida.'}
+          {' '}Toque no microfone para parar.
         </p>
       )}
       {micErrorMessage && (
