@@ -72,6 +72,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
             type="button"
             onClick={() => {
               unlock()
+              unlockFeedbackSound()
               speak(word.en, { lang: 'en-US' })
             }}
             disabled={speaking}
