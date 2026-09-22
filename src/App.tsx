@@ -19,9 +19,6 @@ export default function App() {
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
           <span className="text-2xl">🗽</span>
           <span className="text-lg font-extrabold tracking-tight">Appingles</span>
-          <span className="ml-auto rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-            Nível {settings.level}
-          </span>
         </div>
       </header>
 

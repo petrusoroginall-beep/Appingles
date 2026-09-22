@@ -39,8 +39,7 @@ export function PronunciationCard({ word, bestScore, onScored }: PronunciationCa
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">{word.level}</p>
-          <h3 className="mt-1 text-2xl font-bold">{word.en}</h3>
+          <h3 className="text-2xl font-bold">{word.en}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">/{word.phonetic}/</p>
         </div>
         {typeof bestScore === 'number' && bestScore > 0 && (

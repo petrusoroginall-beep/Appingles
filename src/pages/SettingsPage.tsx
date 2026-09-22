@@ -1,11 +1,9 @@
-import type { Level, Settings } from '../types'
+import type { Settings } from '../types'
 
 interface SettingsPageProps {
   settings: Settings
   onChange: (next: Settings) => void
 }
-
-const LEVELS: Level[] = ['A1', 'A2', 'B1', 'B2']
 
 export function SettingsPage({ settings, onChange }: SettingsPageProps) {
   return (
@@ -14,25 +12,6 @@ export function SettingsPage({ settings, onChange }: SettingsPageProps) {
       <p className="mt-1 text-slate-500 dark:text-slate-400">Personalize sua experiência de aprendizado.</p>
 
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="font-semibold">Seu nível de inglês</h2>
-        <div className="mt-3 flex gap-2">
-          {LEVELS.map((level) => (
-            <button
-              key={level}
-              onClick={() => onChange({ ...settings, level })}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                settings.level === level
-                  ? 'bg-brand-600 text-white'
-                  : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'
-              }`}
-            >
-              {level}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="font-semibold">Voz</h2>
         <label className="mt-3 flex items-center justify-between text-sm">
           <span>Ler respostas da IA automaticamente</span>

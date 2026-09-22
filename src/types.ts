@@ -1,5 +1,3 @@
-export type Level = 'A1' | 'A2' | 'B1' | 'B2'
-
 export interface VocabWord {
   id: string
   en: string
@@ -7,7 +5,6 @@ export interface VocabWord {
   phonetic: string
   exampleEn: string
   examplePt: string
-  level: Level
 }
 
 export interface VocabCategory {
@@ -39,7 +36,6 @@ export interface ProgressState {
 export type ChatVoiceLang = 'en-US' | 'pt-BR'
 
 export interface Settings {
-  level: Level
   voiceRate: number
   autoSpeak: boolean
   chatVoiceLang: ChatVoiceLang
