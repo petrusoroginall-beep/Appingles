@@ -30,7 +30,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     // it still stops (and sends) sooner if you're done early. Kept short: any longer and the
     // wait itself starts feeling like the app is stuck before the AI has even been asked.
     continuous: true,
-    silenceTimeoutMs: 1800,
+    silenceTimeoutMs: 2000,
     onFinish: (text) => {
       if (text) void handleSend(text)
     },
