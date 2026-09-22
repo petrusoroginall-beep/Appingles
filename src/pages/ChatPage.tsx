@@ -3,6 +3,7 @@ import type { ChatMessage, Settings } from '../types'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { getAIReply } from '../lib/ai'
+import { findInstantTranslation } from '../lib/instantAnswers'
 import { friendlySpeechError } from '../lib/speechErrors'
 import { MicButton } from '../components/MicButton'
 
@@ -51,9 +52,19 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
     const nextHistory = [...messages, userMessage]
     setMessages(nextHistory)
     setDraft('')
-    setThinking(true)
     onTurn()
 
+    // Common phrases are answered instantly from a local dictionary — no network call, no
+    // risk of the AI echoing/translating before answering, zero delay.
+    const instant = findInstantTranslation(text)
+    if (instant) {
+      const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', text: instant, createdAt: Date.now() }
+      setMessages((prev) => [...prev, assistantMessage])
+      if (settings.autoSpeak) speak(instant, { rate: settings.voiceRate })
+      return
+    }
+
+    setThinking(true)
     const { text: reply, usedRealAI, errorMessage } = await getAIReply(nextHistory)
     setAiOnline(usedRealAI)
     setNotice(!usedRealAI ? `IA indisponível agora (${errorMessage ?? 'erro'}). Usando modo de prática offline.` : null)
