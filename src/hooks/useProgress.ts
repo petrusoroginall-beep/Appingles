@@ -52,5 +52,12 @@ export function useProgress() {
     [setProgress, touchStreak],
   )
 
-  return { progress, recordScore, markLearned }
+  const restoreProgress = useCallback(
+    (data: ProgressState) => {
+      setProgress(data)
+    },
+    [setProgress],
+  )
+
+  return { progress, recordScore, markLearned, restoreProgress }
 }

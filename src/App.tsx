@@ -1,5 +1,6 @@
 import type { Tab } from './types'
 import { TabBar } from './components/TabBar'
+import { StreakReminder } from './components/StreakReminder'
 import { VocabularyPage } from './pages/VocabularyPage'
 import { ProgressPage } from './pages/ProgressPage'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -7,7 +8,7 @@ import { useProgress } from './hooks/useProgress'
 
 export default function App() {
   const [tab, setTab] = useLocalStorage<Tab>('appingles.activeTab', 'vocabulario')
-  const { progress, recordScore } = useProgress()
+  const { progress, recordScore, restoreProgress } = useProgress()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -18,9 +19,11 @@ export default function App() {
         </div>
       </header>
 
+      <StreakReminder progress={progress} />
+
       <main className="flex-1 pb-4">
         {tab === 'vocabulario' && <VocabularyPage progress={progress} onScored={recordScore} />}
-        {tab === 'progresso' && <ProgressPage progress={progress} />}
+        {tab === 'progresso' && <ProgressPage progress={progress} onRestore={restoreProgress} />}
       </main>
 
       <TabBar active={tab} onChange={setTab} />
