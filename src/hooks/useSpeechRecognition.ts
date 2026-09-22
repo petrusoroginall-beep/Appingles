@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type RecognitionStatus = 'idle' | 'listening' | 'processing' | 'unsupported' | 'error'
+export type MicPermission = 'granted' | 'denied' | 'prompt' | 'unknown'
 
 interface UseSpeechRecognitionOptions {
   lang?: string
@@ -15,6 +16,11 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
   const [status, setStatus] = useState<RecognitionStatus>('idle')
   const [transcript, setTranscript] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // 'unknown' on browsers that don't support querying the microphone permission ahead of time
+  // (notably Safari) — in that case we just let the browser's own prompt show on the first tap,
+  // same as always. Where it IS queryable (Chrome, Edge), knowing it's already 'denied' lets the
+  // UI explain how to fix it *before* the user taps a mic button that would otherwise do nothing.
+  const [permission, setPermission] = useState<MicPermission>('unknown')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const finalTextRef = useRef('')
   // Some engines (notably mobile Safari/WebKit) end a recognition session on their own short
@@ -28,6 +34,28 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
   onFinishRef.current = onFinish
 
   const supported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.permissions?.query) return
+    let status: PermissionStatus | null = null
+    let cancelled = false
+    navigator.permissions
+      .query({ name: 'microphone' as PermissionName })
+      .then((result) => {
+        if (cancelled) return
+        status = result
+        setPermission(result.state as MicPermission)
+        result.onchange = () => setPermission(result.state as MicPermission)
+      })
+      .catch(() => {
+        // Browser doesn't recognize 'microphone' as a queryable permission (Safari) — the
+        // browser's native prompt on first tap remains the only signal we get.
+      })
+    return () => {
+      cancelled = true
+      if (status) status.onchange = null
+    }
+  }, [])
 
   useEffect(() => {
     if (!supported) {
@@ -122,5 +150,5 @@ export function useSpeechRecognition({ lang = 'en-US', continuous = false, onRes
     recognitionRef.current?.stop()
   }, [])
 
-  return { status, transcript, error, supported, start, stop }
+  return { status, transcript, error, supported, permission, start, stop }
 }
