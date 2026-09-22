@@ -1,7 +1,7 @@
 {
-  "name": "Appingles — Aprenda inglês falando",
-  "short_name": "Appingles",
-  "description": "Aprenda inglês praticando vocabulário e pronúncia.",
+  "name": "Speakly — Fale inglês de verdade",
+  "short_name": "Speakly",
+  "description": "Fale inglês de verdade. Vocabulário, pronúncia, diálogos reais e gramática.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -30,7 +30,7 @@ export function ProgressPage({ progress, onRestore }: ProgressPageProps) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `appingles-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `speakly-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -46,7 +46,7 @@ export function ProgressPage({ progress, onRestore }: ProgressPageProps) {
       try {
         const data = JSON.parse(String(reader.result))
         if (!isProgressState(data)) {
-          setMessage({ type: 'error', text: 'Esse arquivo não é um backup válido do Appingles.' })
+          setMessage({ type: 'error', text: 'Esse arquivo não é um backup válido do Speakly.' })
           return
         }
         const confirmed = window.confirm('Isso vai substituir seu progresso atual por este backup. Continuar?')

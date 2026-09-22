@@ -18,8 +18,11 @@ export default function App() {
       <header className="safe-top border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🗽</span>
-            <span className="text-lg font-extrabold tracking-tight">Appingles</span>
+            <span className="text-2xl">💬</span>
+            <div className="leading-tight">
+              <p className="text-lg font-extrabold tracking-tight">Speakly</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Fale inglês de verdade</p>
+            </div>
           </div>
           <button
             type="button"
