@@ -25,9 +25,11 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
   const { status, transcript, start, stop, supported, error: micError } = useSpeechRecognition({
     lang: voiceLang,
     // Keep listening across natural pauses instead of cutting off at the first one, so
-    // speaking slowly or hesitantly doesn't get the sentence chopped in half. The user decides
-    // when they're done by tapping the mic again.
+    // speaking slowly or hesitantly doesn't get the sentence chopped in half. It auto-sends
+    // 5 seconds after the last bit of speech — no need to tap the mic again — but tapping
+    // it still stops (and sends) sooner if you're done early.
     continuous: true,
+    silenceTimeoutMs: 5000,
     onFinish: (text) => {
       if (text) void handleSend(text)
     },
@@ -189,7 +191,7 @@ export function ChatPage({ settings, onSettingsChange, onTurn }: ChatPageProps) 
       </div>
       {listening && (
         <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale sem pressa e toque no microfone de novo quando terminar.
+          Ouvindo em {voiceLang === 'en-US' ? 'inglês' : 'português'}... fale sem pressa, envio automático após alguns segundos de silêncio.
         </p>
       )}
       {micErrorMessage && (
