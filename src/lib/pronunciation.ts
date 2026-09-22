@@ -35,9 +35,12 @@ const CONTRACTION_EXPANSIONS: Record<string, string> = {
   ima: 'i am going to',
 }
 
-function tokenize(text: string): string[] {
-  const words = normalize(text).split(' ').filter(Boolean)
-  return words.flatMap((w) => CONTRACTION_EXPANSIONS[w]?.split(' ') ?? [w])
+function tokenizeRaw(text: string): string[] {
+  return normalize(text).split(' ').filter(Boolean)
+}
+
+function tokenizeExpanded(text: string): string[] {
+  return tokenizeRaw(text).flatMap((w) => CONTRACTION_EXPANSIONS[w]?.split(' ') ?? [w])
 }
 
 function levenshtein(a: string, b: string) {
@@ -58,24 +61,51 @@ function levenshtein(a: string, b: string) {
   return dp[n]
 }
 
-// Two words "match" if identical, or close enough that the difference is just a mis-heard
-// letter or a missing plural/verb ending — not a real pronunciation mistake.
+// Collapses a word down to how it *sounds*, not how it's spelled, so that a speech-recognition
+// engine picking one of several equally-valid homophone spellings for the same sound ("lemme" vs
+// "lemmy", "nite" vs "night") never gets penalized. Every rule here only folds together letter
+// patterns that are genuine alternate spellings of the same sound — it never merges sounds that
+// are actually different, so it can't make a real mispronunciation score higher than it should.
+function phoneticFold(word: string): string {
+  let w = word
+  // A doubled consonant almost never changes the sound ("lemme"/"lemmy", "gonna"/"gunna").
+  w = w.replace(/([a-z])\1+/g, '$1')
+  w = w.replace(/ck/g, 'k')
+  w = w.replace(/qu/g, 'kw')
+  w = w.replace(/ph/g, 'f')
+  w = w.replace(/wr/g, 'r')
+  w = w.replace(/^kn/, 'n')
+  w = w.replace(/gh/g, '')
+  w = w.replace(/x/g, 'ks')
+  // A word-final y/ee/ea/ie is the same trailing "ih" sound recognizers often spell as a plain e.
+  w = w.replace(/(ie|ee|ea|y)$/, 'i')
+  // A silent trailing e after a consonant (once the sound above is already captured) carries no sound.
+  w = w.replace(/([^aeiou])e$/, '$1')
+  return w
+}
+
+// Two words "match" if identical, close enough that the difference is just a mis-heard
+// letter or a missing plural/verb ending, or — critically — spelled differently but
+// pronounced the same way, which is what a speech-recognition engine actually judges.
 function wordsMatch(a: string, b: string): boolean {
   if (a === b) return true
   if (!a || !b) return false
-  const dist = levenshtein(a, b)
-  return dist <= 1 || dist / Math.max(a.length, b.length) <= 0.25
+  const closeEnough = (x: string, y: string) => {
+    const dist = levenshtein(x, y)
+    return dist <= 1 || dist / Math.max(x.length, y.length) <= 0.25
+  }
+  if (closeEnough(a, b)) return true
+  const fa = phoneticFold(a)
+  const fb = phoneticFold(b)
+  return fa === fb || closeEnough(fa, fb)
 }
 
-/** Returns a 0-100 similarity score between a spoken transcript and the target phrase. */
-export function scorePronunciation(target: string, spoken: string): number {
-  const targetWords = tokenize(target)
-  const spokenWords = tokenize(spoken)
+// Word-level alignment (not character-level): a single mis-heard word in a long phrase
+// should cost a fraction of the score, not tank the whole thing the way a raw
+// character-by-character diff would.
+function alignmentScore(targetWords: string[], spokenWords: string[]): number {
   if (targetWords.length === 0 || spokenWords.length === 0) return 0
 
-  // Word-level alignment (not character-level): a single mis-heard word in a long phrase
-  // should cost a fraction of the score, not tank the whole thing the way a raw
-  // character-by-character diff would.
   const m = targetWords.length
   const n = spokenWords.length
   const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
@@ -91,7 +121,19 @@ export function scorePronunciation(target: string, spoken: string): number {
   const distance = dp[m][n]
   const maxLen = Math.max(m, n)
   const similarity = 1 - distance / maxLen
-  const score = Math.round(Math.max(0, similarity) * 100)
+  return Math.round(Math.max(0, similarity) * 100)
+}
+
+/** Returns a 0-100 similarity score between a spoken transcript and the target phrase. */
+export function scorePronunciation(target: string, spoken: string): number {
+  // Expanding a contraction ("gonna" -> "going to") only helps when *both* sides end up with
+  // the same word count; when the recognizer instead heard the contraction as a same-sounding
+  // single word ("lemme" heard as "lemmy"), forcing the expansion would break the alignment
+  // even though the raw, unexpanded words already sound identical. Scoring both ways and
+  // keeping the best result means neither case ever gets unfairly penalized by the other.
+  const rawScore = alignmentScore(tokenizeRaw(target), tokenizeRaw(spoken))
+  const expandedScore = alignmentScore(tokenizeExpanded(target), tokenizeExpanded(spoken))
+  const score = Math.max(rawScore, expandedScore)
   // A near-perfect attempt should read as a full 100%, not linger at 90-something.
   return score >= 90 ? 100 : score
 }
