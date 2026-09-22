@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { VocabWord } from '../types'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
-import { playFeedbackSound } from '../lib/feedbackSound'
+import { playFeedbackSound, unlockFeedbackSound } from '../lib/feedbackSound'
 
 interface ListeningQuizProps {
   words: VocabWord[]
@@ -50,6 +50,7 @@ export function ListeningQuiz({ words, onExit }: ListeningQuizProps) {
   function handleAnswer(optionId: string) {
     if (selectedId) return
     unlock()
+    unlockFeedbackSound()
     setSelectedId(optionId)
     const correct = optionId === current.word.id
     if (correct) setScore((s) => s + 1)
