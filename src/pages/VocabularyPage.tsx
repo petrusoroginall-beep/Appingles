@@ -16,6 +16,24 @@ function normalize(text: string) {
     .replace(/[̀-ͯ]/g, '')
 }
 
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Lower is a better match: 0 = exactly what was typed, 1 = the phrase starts with it (the
+// "continuation" suggestions the search should surface first), 2 = it appears as a whole word
+// inside the phrase, 3 = it's just a substring somewhere. Only the word/phrase itself is
+// checked — not the example sentences — so searching "I love" surfaces "I love you", not any
+// unrelated sentence that happens to mention it.
+function matchRank(text: string, q: string): number | null {
+  const t = normalize(text)
+  if (t === q) return 0
+  if (t.startsWith(q)) return 1
+  if (new RegExp(`\\b${escapeRegExp(q)}`).test(t)) return 2
+  if (t.includes(q)) return 3
+  return null
+}
+
 const searchableWords = vocabulary.flatMap((cat) =>
   cat.words.map((word) => ({ ...word, categoryId: cat.id, categoryEmoji: cat.emoji, categoryTitle: cat.title })),
 )
@@ -31,9 +49,11 @@ export function VocabularyPage({ progress, onScored }: VocabularyPageProps) {
   const searchResults = useMemo(() => {
     const q = normalize(query.trim())
     if (!q) return []
-    return searchableWords.filter(
-      (w) => normalize(w.en).includes(q) || normalize(w.pt).includes(q) || normalize(w.exampleEn).includes(q) || normalize(w.examplePt).includes(q),
-    )
+    return searchableWords
+      .map((w) => ({ word: w, rank: Math.min(matchRank(w.en, q) ?? Infinity, matchRank(w.pt, q) ?? Infinity) }))
+      .filter((r) => r.rank !== Infinity)
+      .sort((a, b) => a.rank - b.rank)
+      .map((r) => r.word)
   }, [query])
 
   function openWord(catId: string, id: string) {
